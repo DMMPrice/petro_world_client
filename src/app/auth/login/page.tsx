@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Droplets } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -23,6 +24,19 @@ export default function LoginPage() {
       router.push('/');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (credential: string) => {
+    setLoading(true);
+    try {
+      await signInWithGoogle(credential);
+      toast.success('Welcome back!');
+      router.push('/');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Google sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -70,6 +84,22 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+          <div className="relative my-6">
+            <div className="border-t border-slate-200" />
+            <span className="absolute left-1/2 -top-3 -translate-x-1/2 bg-white px-3 text-xs text-slate-400">OR</span>
+          </div>
+          <div className="flex justify-center [&>div]:w-full [&_iframe]:!w-full">
+            <GoogleLogin
+              onSuccess={(response) => {
+                if (response.credential) void handleGoogleLogin(response.credential);
+                else toast.error('Google did not return a credential');
+              }}
+              onError={() => toast.error('Google sign-in failed')}
+              text="signin_with"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
           <p className="text-center text-sm text-slate-500 mt-4">
             Don&apos;t have an account?{' '}
             <Link href="/auth/signup" className="text-brand font-semibold hover:underline">Sign up</Link>
